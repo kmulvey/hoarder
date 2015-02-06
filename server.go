@@ -9,6 +9,12 @@ import (
 
 var cache map[[16]byte]*http.Response = make(map[[16]byte]*http.Response)
 
+func main() {
+	http.HandleFunc("/", handler)
+	http.HandleFunc("/dump", dumpHandler)
+	http.ListenAndServe(":8080", nil)
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	var username string = r.URL.Query()["username"][0]
 	var path string = r.URL.RequestURI()
@@ -27,7 +33,10 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+func dumpHandler(w http.ResponseWriter, r *http.Request) {
+	var keys string
+	for k, _ := range cache {
+		keys += string(k[:16]) + " "
+	}
+	fmt.Fprintf(w, keys)
 }
