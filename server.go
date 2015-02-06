@@ -34,7 +34,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		io.Copy(w, resp.body)
 	} else {
 		println("cache miss")
-		res, err := http.Get("http://localhost")
+		res, err := http.Get("http://google.com")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -55,6 +55,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func dumpHandler(w http.ResponseWriter, r *http.Request) {
 	var keys string
 	for k, _ := range cache {
+		fmt.Printf("%+v", k)
 		keys += string(k[:16]) + " "
 	}
 	fmt.Fprintf(w, keys)
