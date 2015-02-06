@@ -22,8 +22,8 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	// not checking errors on query
-	var username string = r.URL.Query()["username"][0]
+	// not checking errors on query .. need something like username, ok := Query()["key"]
+	var username string = r.URL.Query()["key"][0]
 	var path string = r.URL.RequestURI()
 	var cacheKey []byte = []byte(username + path)
 
@@ -50,6 +50,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// dumpHandler is supposed to dump the cache but its broken
+// at the moment
 func dumpHandler(w http.ResponseWriter, r *http.Request) {
 	var keys string
 	for k, _ := range cache {
@@ -58,7 +60,7 @@ func dumpHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, keys)
 }
 
-// copyHeaders copies overwrites header and it sucks becasue
+// copyHeaders overwrites headers and it sucks becasue
 // we are looping on evey req
 func copyHeaders(dst, src http.Header) {
 	for k, w := range src {
