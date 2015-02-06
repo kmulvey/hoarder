@@ -3,14 +3,14 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 )
 
 type CachedReq struct {
 	header http.Header
-	body   []byte
+	body   io.ReadCloser
 }
 
 var cache map[[16]byte]CachedReq = make(map[[16]byte]CachedReq)
@@ -22,26 +22,30 @@ func main() {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
+	// not checking errors on query
 	var username string = r.URL.Query()["username"][0]
 	var path string = r.URL.RequestURI()
 	var cacheKey []byte = []byte(username + path)
 
 	if resp, ok := cache[md5.Sum(cacheKey)]; ok {
 		println("cache hit")
-		w.Write(resp.body)
+		// send it back
+		copyHeaders(w.Header(), r.Header)
+		io.Copy(w, resp.body)
 	} else {
 		println("cache miss")
-		res, err := http.Get("http://www.google.com/")
+		res, err := http.Get("http://localhost")
 		if err != nil {
 			log.Fatal(err)
 		}
-		body, bErr := ioutil.ReadAll(res.Body)
-		if bErr != nil {
-			log.Fatal(bErr)
-		}
+		// serve it back
+		copyHeaders(w.Header(), res.Header)
+		io.Copy(w, res.Body)
+
+		// populate the cache
 		cache[md5.Sum(cacheKey)] = CachedReq{
 			res.Header,
-			body,
+			res.Body,
 		}
 	}
 }
@@ -52,4 +56,14 @@ func dumpHandler(w http.ResponseWriter, r *http.Request) {
 		keys += string(k[:16]) + " "
 	}
 	fmt.Fprintf(w, keys)
+}
+
+// copyHeaders copies overwrites header and it sucks becasue
+// we are looping on evey req
+func copyHeaders(dst, src http.Header) {
+	for k, w := range src {
+		for _, v := range w {
+			dst.Add(k, v)
+		}
+	}
 }
